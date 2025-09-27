@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     # Embedding / LLM settings
     embedding_model: str = Field(default="sentence-transformers/all-MiniLM-L6-v2")
-    llm_model: str = Field(default="gemini-1.5-flash")
+    llm_model: str = Field(default="gemini-2.0-flash")
     google_api_key: Optional[str] = Field(default=None)
 
     # RAG settings
