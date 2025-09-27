@@ -1,0 +1,51 @@
+__pycache__/
+*.py[cod]
+*.so
+*.dylib
+*.pyd
+
+# Bytecode caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+python.cache/
+
+# Packaging
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# Virtual environments
+.env
+.venv/
+venv/
+env/
+ENV/
+
+# Logs and coverage
+*.log
+coverage/
+.coverage*
+
+# Local caches and data
+.cache/
+.streamlit/
+.faiss/
+
+# Project workspace (repo clones)
+.cache/workspace/
+workspace/
+
+# IDE settings
+.vscode/
+.idea/
+*.code-workspace
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Misc
+.python-version
+*.sqlite3
