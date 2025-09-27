@@ -45,7 +45,7 @@ async def test_pipeline_generates_artifacts(monkeypatch, tmp_path: Path) -> None
 
     result = await pipeline.analyze_repository(payload)
 
-    assert result.repo_url == payload.repo_url
+    assert result.repo_url == str(payload.repo_url)
     assert any(artifact.name == "Repository Summary" for artifact in result.artifacts)
     assert "graph TD" in result.mermaid_diagram
     assert result.architecture_map

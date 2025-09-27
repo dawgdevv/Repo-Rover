@@ -23,10 +23,33 @@ def get_backend_url() -> str:
     return (secrets_url or "http://localhost:8000").rstrip("/")
 
 
+def get_request_timeout() -> float:
+    env_timeout = os.getenv("BACKEND_TIMEOUT")
+    if env_timeout:
+        try:
+            return float(env_timeout)
+        except ValueError:
+            st.warning("Ignoring invalid BACKEND_TIMEOUT environment variable; using default.")
+
+    try:
+        secrets_timeout = st.secrets["backend_timeout"]  # type: ignore[index]
+    except (FileNotFoundError, KeyError):
+        secrets_timeout = None
+
+    if secrets_timeout is not None:
+        try:
+            return float(secrets_timeout)
+        except (TypeError, ValueError):
+            st.warning("Ignoring invalid backend_timeout secret; using default.")
+
+    return 180.0
+
+
 st.set_page_config(page_title="Repo RAG Analyst", layout="wide")
 
 
 BACKEND_URL = get_backend_url()
+REQUEST_TIMEOUT = get_request_timeout()
 API_PATH = "/api/analysis/run"
 
 st.title("🔍 Repo RAG Analyst")
@@ -63,7 +86,11 @@ def render_sidebar() -> Dict[str, Any]:
 
 
 def trigger_analysis(payload: Dict[str, Any]) -> Dict[str, Any]:
-    response = requests.post(f"{BACKEND_URL}{API_PATH}", json=payload, timeout=60)
+    response = requests.post(
+        f"{BACKEND_URL}{API_PATH}",
+        json=payload,
+        timeout=(10, REQUEST_TIMEOUT),
+    )
     response.raise_for_status()
     return response.json()
 
@@ -91,9 +118,15 @@ if st.button("Run Analysis", type="primary", use_container_width=True):
     if not payload["repo_url"]:
         st.error("Please provide a valid repository URL before running the analysis.")
     else:
-        with st.spinner("Running RAG pipeline... this may take a minute"):
+        with st.spinner(
+            "Running RAG pipeline... the first run may take a couple of minutes while models download"
+        ):
             try:
                 result = trigger_analysis(payload)
+            except requests.exceptions.Timeout:
+                st.error(
+                    "The analysis took too long and timed out. Consider narrowing the file filters or increasing BACKEND_TIMEOUT."
+                )
             except requests.HTTPError as exc:
                 st.error(f"Request failed: {exc.response.text}")
             except Exception as exc:  # noqa: BLE001

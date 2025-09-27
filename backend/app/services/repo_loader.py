@@ -24,7 +24,8 @@ class RepositoryFetcher:
         return self.settings.workspace_dir / repo_hash
 
     def fetch(self, repo_url: str, branch: Optional[str] = None, refresh: bool = False) -> Path:
-        destination = self._resolve_repo_path(repo_url)
+        repo_url_str = str(repo_url)
+        destination = self._resolve_repo_path(repo_url_str)
 
         if destination.exists() and refresh:
             shutil.rmtree(destination)
@@ -33,7 +34,7 @@ class RepositoryFetcher:
             repo = Repo(destination)
             repo.remote().pull()
         else:
-            repo = Repo.clone_from(repo_url, destination)
+            repo = Repo.clone_from(repo_url_str, destination)
 
         if branch:
             repo.git.checkout(branch)

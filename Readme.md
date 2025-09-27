@@ -38,7 +38,7 @@ tests/                     # Pytest suite for API + RAG pipeline
 
 - Python 3.10+
 - Git (for repository cloning)
-- Optional: OpenAI API key for high-quality artifact generation (`OPENAI_API_KEY`)
+- Optional: Google Gemini API key for high-quality artifact generation (`GOOGLE_API_KEY`)
 
 Install all dependencies with:
 
@@ -50,11 +50,12 @@ pip install -r requirements.txt
 
 Key environment variables (can be placed in `.env`):
 
-- `OPENAI_API_KEY`: Enables real LLM generations (otherwise deterministic fallbacks are used).
+- `GOOGLE_API_KEY`: Enables real LLM generations via Gemini (otherwise deterministic fallbacks are used).
 - `GITHUB_TOKEN`: Personal access token if you prefer fetching via the GitHub API.
 - `WORKSPACE_DIR`: Location to cache cloned repositories (defaults to `.cache/workspace`).
 - `EMBEDDING_MODEL`: Sentence-transformer model name (defaults to `sentence-transformers/all-MiniLM-L6-v2`).
-- `LLM_MODEL`: Chat completion model to use when `OPENAI_API_KEY` is set (defaults to `gpt-4o-mini`).
+- `LLM_MODEL`: Gemini model to use when `GOOGLE_API_KEY` is set (defaults to `gemini-1.5-flash`).
+- `BACKEND_TIMEOUT`: Optional override (in seconds) for the Streamlit client read timeout when calling the backend (defaults to 180).
 
 ## 🚀 Running the Backend
 
@@ -78,7 +79,7 @@ Alternatively, create a `.streamlit/secrets.toml` file if you prefer configurati
 backend_url = "http://localhost:8000"
 ```
 
-The UI lets you submit repository URLs, tweak include/exclude patterns, and inspect the generated artifacts.
+The UI lets you submit repository URLs, tweak include/exclude patterns, and inspect the generated artifacts. The first run may take a couple of minutes while the embedding model downloads; increase `BACKEND_TIMEOUT` if you anticipate long analyses.
 
 ## 🧪 Tests
 

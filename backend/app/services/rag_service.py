@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import textwrap
-from collections import defaultdict
+from collections import Counter, defaultdict
 from typing import Dict, List
 
 from anyio import to_thread
@@ -56,7 +56,7 @@ class RAGPipeline:
         change_impact = self._build_change_impact(documents)
 
         return RepositoryAnalysisResponse(
-            repo_url=payload.repo_url,
+            repo_url=str(payload.repo_url),
             artifacts=artifacts,
             architecture_map=architecture_map,
             mermaid_diagram=mermaid_diagram,
@@ -101,15 +101,55 @@ class RAGPipeline:
         if not documents:
             return "No textual documents were discovered in the repository."
 
-        top_files = "\n".join(f"- `{doc.path}`" for doc in documents[:10])
-        system_prompt = "You summarize codebases for onboarding engineers."
-        user_prompt = textwrap.dedent(
-            f"""
-            Provide a high-level summary of this repository.
-            There are {len(documents)} textual documents. Here are sample file paths:\n{top_files}
-            """
+        if self.llm.is_configured:
+            top_files = "\n".join(f"- `{doc.path}`" for doc in documents[:10])
+            system_prompt = "You summarize codebases for onboarding engineers."
+            user_prompt = textwrap.dedent(
+                f"""
+                Provide a high-level summary of this repository.
+                There are {len(documents)} textual documents. Here are sample file paths:\n{top_files}
+                """
+            )
+            return self.llm.generate(system_prompt, user_prompt)
+
+        return self._heuristic_summary(documents)
+
+    def _heuristic_summary(self, documents: List[Document]) -> str:
+        readme = next((doc for doc in documents if doc.path.name.lower().startswith("readme")), None)
+
+        extension_counts = Counter(doc.path.suffix.lower() or "<root>" for doc in documents)
+        dir_counts = Counter(doc.path.parts[0] if len(doc.path.parts) > 1 else "<root>" for doc in documents)
+
+        top_extensions = "\n".join(
+            f"- `{ext}`: {count} file{'s' if count != 1 else ''}"
+            for ext, count in extension_counts.most_common(8)
         )
-        return self.llm.generate(system_prompt, user_prompt)
+
+        top_dirs = "\n".join(
+            f"- `{directory}`: {count} file{'s' if count != 1 else ''}"
+            for directory, count in dir_counts.most_common(8)
+        )
+
+        summary_lines = [
+            "## Repository Overview",
+            f"- Total textual documents processed: {len(documents)}",
+            "- Primary languages / file types:",
+            top_extensions or "  - Not enough information to detect languages.",
+            "- Key directories:",
+            top_dirs or "  - Files are mostly at the repository root.",
+        ]
+
+        if readme:
+            excerpt_lines = [line.rstrip() for line in readme.content.splitlines() if line.strip()][:12]
+            if excerpt_lines:
+                summary_lines.append("\n### README Highlights")
+                summary_lines.append("\n".join(excerpt_lines))
+
+        sample_files = "\n".join(f"- `{doc.path}`" for doc in documents[:10])
+        summary_lines.append("\n### Sample Files Considered")
+        summary_lines.append(sample_files)
+
+        return "\n".join(summary_lines).strip()
 
     def _build_architecture_map(self, documents: List[Document]) -> Dict[str, Dict]:
         tree: Dict[str, Dict] = {}
