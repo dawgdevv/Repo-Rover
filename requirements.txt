@@ -17,3 +17,7 @@ requests==2.32.3
 sentence-transformers==3.0.1
 streamlit==1.37.0
 uvicorn[standard]==0.30.1
+
+
+# Windows users may need to install Git for Windows
+# and Microsoft Visual C++ Redistributable
